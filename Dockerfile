@@ -1,8 +1,8 @@
 FROM python:3.12-slim-bookworm
 
 # Build arguments for user ID and group ID (defaults to 1000)
-ARG UID=1000
-ARG GID=1000
+ARG UID=99
+ARG GID=100
 
 # Copy uv from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
