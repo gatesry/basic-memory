@@ -2,14 +2,18 @@ name: Docker Image CI
 
 on:
   push:
+    branches: [main]
     tags:
-      - 'v*'  # Trigger on version tags like v1.0.0, v0.13.0, etc.
-  workflow_dispatch:  # Allow manual triggering for testing
+      - "v*" # Trigger on version tags like v1.0.0, v0.13.0, etc.
+  workflow_dispatch: # Allow manual triggering for testing
 
 env:
   REGISTRY: ghcr.io
   # Push images to the current repo owner's GHCR namespace (works in forks)
   IMAGE_NAME: ${{ github.repository_owner }}/basic-memory
+  # Custom UID/GID for unRAID compatibility
+  BUILD_UID: 99
+  BUILD_GID: 100
 
 jobs:
   docker:
@@ -57,5 +61,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            UID=${{ env.BUILD_UID }}
+            GID=${{ env.BUILD_GID }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
