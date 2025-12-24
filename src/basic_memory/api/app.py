@@ -30,13 +30,16 @@ from basic_memory.api.v2.routers import (
     prompt_router as v2_prompt,
     importer_router as v2_importer,
 )
-from basic_memory.config import ConfigManager
+from basic_memory.config import ConfigManager, init_api_logging
 from basic_memory.services.initialization import initialize_file_sync, initialize_app
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pragma: no cover
     """Lifecycle manager for the FastAPI app. Not called in stdio mcp mode"""
+
+    # Initialize logging for API (stdout in cloud mode, file otherwise)
+    init_api_logging()
 
     app_config = ConfigManager().config
     logger.info("Starting Basic Memory API")
@@ -56,6 +59,7 @@ async def lifespan(app: FastAPI):  # pragma: no cover
         app.state.sync_task = asyncio.create_task(initialize_file_sync(app_config))
     else:
         logger.info("Sync changes disabled. Skipping file sync service.")
+        app.state.sync_task = None
 
     # proceed with startup
     yield
@@ -64,6 +68,10 @@ async def lifespan(app: FastAPI):  # pragma: no cover
     if app.state.sync_task:
         logger.info("Stopping sync...")
         app.state.sync_task.cancel()  # pyright: ignore
+        try:
+            await app.state.sync_task
+        except asyncio.CancelledError:
+            logger.info("Sync task cancelled successfully")
 
     await db.shutdown_db()
 
